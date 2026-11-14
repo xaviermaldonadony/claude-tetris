@@ -1081,9 +1081,18 @@ function loadHighScores() {
 
 function saveHighScores() {
   try { localStorage.setItem(HS_KEY, JSON.stringify(hsData)); } catch (e) { /* storage unavailable */ }
+  renderTopPlayer();
 }
 
+// Shows the rank-1 player's name and score in the sidebar.
+function renderTopPlayer() {
+  const top = hsData.scores[0];
+  topPlayerEl.textContent = top ? `${top.name} ${top.score.toLocaleString()}` : '-';
+}
+
+const topPlayerEl = document.getElementById('top-player');
 let hsData = loadHighScores();
+renderTopPlayer();
 let pendingIndex = null; // row of the entry added at game over, until its name is saved
 let highlightIndex = -1; // table row to highlight
 let runMaxCombo = 0, runMaxLines = 0; // best combo and line count of the current run
