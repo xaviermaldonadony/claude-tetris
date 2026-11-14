@@ -54,4 +54,6 @@ jobs:
                - If no id is found, create it with `gh issue comment ${{ github.event.issue.number }} --body "<body>"`.
                - Never post a second triage comment.
                - The comment body must be valid GitHub Flavored Markdown that GitHub renders correctly: use `##` section headings, `-` bullets, fenced code blocks with a language tag for code, and `` `file:line` `` for code references. Do not wrap the whole body in a code block.
-          claude_args: '--allowedTools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label list:*),Bash(gh api:*),Read,Grep,Glob"'
+          claude_args: |
+            --model claude-haiku-5-5
+            --allowedTools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label list:*),Bash(gh api:*),Read,Grep,Glob"
