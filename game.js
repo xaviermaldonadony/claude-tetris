@@ -330,6 +330,10 @@ function addEffect(text) {
   if (effects.length > 4) effects.shift();
 }
 
+function dropIntervalFor(lvl) {
+  return Math.max(100, 1000 - (lvl - 1) * 90);
+}
+
 // Scoring for one lock: combo multiplier, back-to-back, T-spin and perfect-clear bonuses.
 function scoreLock(cleared, tspin, perfect) {
   combo = cleared > 0 ? combo + 1 : 0;
@@ -347,8 +351,8 @@ function scoreLock(cleared, tspin, perfect) {
   score += Math.round(gained);
 
   lines += cleared;
-  level = Math.floor(lines / 10) + 1;
-  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+  level = runStartLevel + Math.floor(lines / 10);
+  dropInterval = dropIntervalFor(level);
   energy = Math.min(ENERGY_MAX, energy + cleared * ENERGY_PER_LINE);
 
   if (lines >= nextPowerupAt) {
@@ -516,12 +520,50 @@ function togglePause() {
   paused = !paused;
   if (paused) {
     stopGame();
-    showOverlay('PAUSED', '', []);
+    openPauseMenu();
   } else {
-    overlay.classList.add('hidden');
+    closePauseMenu();
     startGame();
   }
 }
+
+// ---- Pause menu ----
+// Opened by P or Escape. While paused, keydown ignores all game input (it returns early on `paused`).
+const pauseMenu = document.getElementById('pause-menu');
+const pauseMainView = document.getElementById('pause-main');
+const pauseControlsView = document.getElementById('pause-controls');
+const pauseResumeBtn = document.getElementById('pause-resume-btn');
+const pauseRestartBtn = document.getElementById('pause-restart-btn');
+const pauseControlsBtn = document.getElementById('pause-controls-btn');
+const pauseBackBtn = document.getElementById('pause-back-btn');
+const startLevelSelect = document.getElementById('start-level');
+
+// runStartLevel is the level the current run began on; scoreLock() adds lines/10 to it.
+// The start-level select holds the choice for the next classic run (init() reads it).
+let runStartLevel = 1;
+
+// Focus is not moved into the menu: a focused button would take Space/Enter, which the
+// paused keydown handler ignores, so a native click would fire instead.
+function openPauseMenu() {
+  pauseMainView.hidden = false;
+  pauseControlsView.hidden = true;
+  pauseMenu.hidden = false;
+}
+
+function closePauseMenu() {
+  pauseMenu.hidden = true;
+}
+
+pauseResumeBtn.addEventListener('click', togglePause);
+pauseRestartBtn.addEventListener('click', retry);
+pauseControlsBtn.addEventListener('click', () => {
+  pauseMainView.hidden = true;
+  pauseControlsView.hidden = false;
+});
+pauseBackBtn.addEventListener('click', () => {
+  pauseControlsView.hidden = true;
+  pauseMainView.hidden = false;
+});
 
 // ---- Abilities ----
 
@@ -646,7 +688,9 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  // Challenge setups are tuned for level 1, so the start level applies to Classic only.
+  runStartLevel = mode === 'challenge' ? 1 : Number(startLevelSelect.value);
+  level = runStartLevel;
   combo = 0;
   b2b = false;
   energy = 0;
@@ -654,7 +698,7 @@ function init() {
   powerupPending = false;
   hold = null;
   holdUsed = false;
-  dropInterval = 1000;
+  dropInterval = dropIntervalFor(level);
   dropAccum = 0;
   slowMs = 0;
   freezeMs = 0;
@@ -667,6 +711,7 @@ function init() {
   queue = [];
   while (queue.length < QUEUE_LEN) queue.push(randomPiece());
   overlay.classList.add('hidden');
+  closePauseMenu();
   spawn();
   updateHUD();
   startGame();
@@ -720,6 +765,7 @@ function showMenu() {
   updateHUD();
   classicBtn.textContent = 'Classic';
   challengeBtn.textContent = 'Challenge';
+  closePauseMenu();
   showOverlay('TETRIS', 'Choose a mode', [classicBtn, challengeBtn]);
   draw();
 }
@@ -913,7 +959,7 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyT') { toggleTheme(); return; }
   if (inMenu) return;
   if (abilityOpen) { handleAbilityKey(e.code); return; }
-  if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); return; }
   if (e.code === 'KeyE') { openAbility(); return; }
   if (paused || gameOver || levelDone) return;
   switch (e.code) {
