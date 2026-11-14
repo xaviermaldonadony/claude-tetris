@@ -40,13 +40,13 @@ jobs:
             2. Run `gh label list --limit 200` to get the labels that exist in this repo. Only use these existing labels. Never create new labels.
             3. Pick 1 to 3 labels that fit the issue and add them with `gh issue edit ${{ github.event.issue.number }} --add-label "<label1>,<label2>"`. Never remove labels that are already on the issue.
             4. Read the relevant code (game.js, index.html, style.css) and write a general diagnostic of the problem. Do not edit any code. Diagnosis only.
-            5. Write the diagnostic in Spanish with these sections:
-               - Resumen
-               - Tipo y severidad
-               - Causa probable (cite file:line references)
-               - Archivos afectados
-               - Pasos sugeridos para la solución
-               - Preguntas abiertas / información faltante
+            5. Write the diagnostic in English with these sections:
+               - Summary
+               - Type and severity
+               - Probable cause (cite file:line references)
+               - Affected files
+               - Suggested steps for a fix
+               - Open questions / missing information
             6. Post the diagnostic as ONE comment that is updated in place:
                - Start the comment body with the exact marker line: <!-- claude-triage -->
                - Look for an existing comment that contains that marker: `gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments --jq '.[] | select(.body | contains("<!-- claude-triage -->")) | .id' | head -n1`

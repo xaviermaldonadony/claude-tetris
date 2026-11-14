@@ -34,4 +34,4 @@ Vanilla JS, HTML5 Canvas, and CSS. No dependencies, no transpilation. The three 
 
 ## Language
 
-The README and the in-app UI text are in Spanish (`lang="es"`, labels like `PAUSA`, `Reiniciar`, `Puntuación`). Keep new user-facing strings in Spanish to match.
+The README and the in-app UI text are in English (`lang="en"`, labels like `PAUSED`, `Restart`, `Score`). Keep new user-facing strings in English to match.
