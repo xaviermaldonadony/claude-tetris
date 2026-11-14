@@ -363,6 +363,7 @@ function scoreLock(cleared, tspin, perfect) {
   if (combo >= 2) addEffect(`COMBO x${combo}`);
   if (perfect) addEffect('PERFECT CLEAR');
   if (cleared === TETRIS_LINES || perfect) flashMs = FLASH_MS;
+  recordStats();
 }
 
 function takeSnapshot() {
@@ -372,6 +373,7 @@ function takeSnapshot() {
     queue: queue.map(clonePiece),
     score, lines, level, dropInterval, combo, b2b,
     nextPowerupAt, powerupPending, hold, holdUsed,
+    runMaxCombo, runMaxLines,
   };
 }
 
@@ -393,6 +395,8 @@ function undo() {
   powerupPending = s.powerupPending;
   hold = s.hold;
   holdUsed = s.holdUsed;
+  runMaxCombo = s.runMaxCombo;
+  runMaxLines = s.runMaxLines;
   dropAccum = 0;
   lastMoveRotated = false;
   lastSnapshot = null;
@@ -479,6 +483,7 @@ function endGame() {
   restartBtn.textContent = mode === 'challenge' ? 'Retry' : 'Restart';
   const where = challenge ? ` · ${challenge.name}` : '';
   showOverlay('GAME OVER', `Score: ${score.toLocaleString()}${where}`, [restartBtn, menuBtn]);
+  showGameOverScores();
 }
 
 function endLevel() {
@@ -637,6 +642,7 @@ const CHALLENGES = [
 // ---- Run lifecycle ----
 
 function init() {
+  finishRunRecords();
   stopGame();
   inMenu = false;
   gameOver = false;
@@ -667,6 +673,7 @@ function init() {
   queue = [];
   while (queue.length < QUEUE_LEN) queue.push(randomPiece());
   overlay.classList.add('hidden');
+  hideHighScores();
   spawn();
   updateHUD();
   startGame();
@@ -696,6 +703,8 @@ function retry() {
 
 function showMenu() {
   stopGame();
+  finishRunRecords();
+  highlightIndex = -1;
   inMenu = true;
   mode = 'classic';
   challenge = null;
@@ -721,6 +730,7 @@ function showMenu() {
   classicBtn.textContent = 'Classic';
   challengeBtn.textContent = 'Challenge';
   showOverlay('TETRIS', 'Choose a mode', [classicBtn, challengeBtn]);
+  showHighScores();
   draw();
 }
 
@@ -907,9 +917,172 @@ function draw() {
   drawSide();
 }
 
+// ---- High scores (localStorage) ----
+
+const HS_KEY = 'tetrisHighScores';
+const HS_MAX = 5;
+const HS_NAME_MAX = 12;
+const HS_DEFAULT_NAME = 'PLAYER';
+
+const nameEntryEl = document.getElementById('name-entry');
+const nameInput = document.getElementById('name-input');
+const nameSaveBtn = document.getElementById('name-save-btn');
+const highScoresEl = document.getElementById('highscores');
+const hsListEl = document.getElementById('hs-list');
+const hsStatsEl = document.getElementById('hs-stats');
+const hsResetBtn = document.getElementById('hs-reset-btn');
+
+function emptyHighScores() {
+  return { scores: [], maxCombo: 0, maxLines: 0 };
+}
+
+function loadHighScores() {
+  const data = emptyHighScores();
+  try {
+    const raw = JSON.parse(localStorage.getItem(HS_KEY));
+    if (!raw || typeof raw !== 'object') return data;
+    if (Array.isArray(raw.scores)) {
+      data.scores = raw.scores
+        .filter(s => s && typeof s.name === 'string' && Number.isFinite(s.score))
+        .map(s => ({ name: s.name.slice(0, HS_NAME_MAX), score: s.score }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, HS_MAX);
+    }
+    if (Number.isFinite(raw.maxCombo)) data.maxCombo = raw.maxCombo;
+    if (Number.isFinite(raw.maxLines)) data.maxLines = raw.maxLines;
+  } catch (e) { /* storage unavailable or corrupt */ }
+  return data;
+}
+
+function saveHighScores() {
+  try { localStorage.setItem(HS_KEY, JSON.stringify(hsData)); } catch (e) { /* storage unavailable */ }
+}
+
+let hsData = loadHighScores();
+let pendingIndex = null; // row of the entry added at game over, until its name is saved
+let highlightIndex = -1; // table row to highlight
+let runMaxCombo = 0, runMaxLines = 0; // best combo and line count of the current run
+
+// Called from scoreLock(). Tracking per run (not saved yet) so undo can roll it back.
+function recordStats() {
+  if (combo > runMaxCombo) runMaxCombo = combo;
+  if (lines > runMaxLines) runMaxLines = lines;
+}
+
+// Merges the current run's best combo and line count into the saved records.
+function commitRunStats() {
+  let changed = false;
+  if (runMaxCombo > hsData.maxCombo) { hsData.maxCombo = runMaxCombo; changed = true; }
+  if (runMaxLines > hsData.maxLines) { hsData.maxLines = runMaxLines; changed = true; }
+  runMaxCombo = 0;
+  runMaxLines = 0;
+  if (changed) saveHighScores();
+}
+
+// Index where a score goes in the sorted list. Ties go below existing entries.
+function insertIndex(value) {
+  let i = 0;
+  while (i < hsData.scores.length && hsData.scores[i].score >= value) i++;
+  return i;
+}
+
+function qualifies(value) {
+  if (value <= 0) return false;
+  return hsData.scores.length < HS_MAX || value > hsData.scores[HS_MAX - 1].score;
+}
+
+function renderHighScores() {
+  hsListEl.replaceChildren();
+  for (let i = 0; i < HS_MAX; i++) {
+    const row = hsData.scores[i];
+    const li = document.createElement('li');
+    li.className = 'hs-row';
+    if (i === highlightIndex) li.classList.add('hs-current');
+    if (!row) li.classList.add('hs-empty');
+    const name = document.createElement('span');
+    name.textContent = `${i + 1}. ${row ? row.name : '---'}`;
+    const pts = document.createElement('span');
+    pts.textContent = row ? row.score.toLocaleString() : '---';
+    li.append(name, pts);
+    hsListEl.append(li);
+  }
+  hsStatsEl.textContent = `Best combo: ${hsData.maxCombo} · Most lines: ${hsData.maxLines}`;
+}
+
+function showHighScores() {
+  renderHighScores();
+  highScoresEl.hidden = false;
+}
+
+function hideHighScores() {
+  highScoresEl.hidden = true;
+  nameEntryEl.hidden = true;
+}
+
+// Renames the entry added at game over if a name was typed. Otherwise it keeps the default name.
+function applyPendingName() {
+  nameEntryEl.hidden = true;
+  if (pendingIndex === null) return;
+  const typed = nameInput.value.trim();
+  if (typed && hsData.scores[pendingIndex]) {
+    hsData.scores[pendingIndex].name = typed;
+    saveHighScores();
+  }
+  pendingIndex = null;
+  nameInput.value = '';
+}
+
+// Runs when a new run or the menu starts, so the previous run's records are kept.
+function finishRunRecords() {
+  applyPendingName();
+  commitRunStats();
+}
+
+function showGameOverScores() {
+  commitRunStats();
+  pendingIndex = null;
+  highlightIndex = -1;
+  if (qualifies(score)) {
+    pendingIndex = insertIndex(score);
+    hsData.scores.splice(pendingIndex, 0, { name: HS_DEFAULT_NAME, score });
+    hsData.scores = hsData.scores.slice(0, HS_MAX);
+    highlightIndex = pendingIndex;
+    saveHighScores();
+    nameInput.value = '';
+    nameEntryEl.hidden = false;
+    nameInput.focus();
+  } else {
+    nameEntryEl.hidden = true;
+  }
+  showHighScores();
+}
+
+function saveName() {
+  applyPendingName();
+  renderHighScores();
+  nameSaveBtn.blur();
+}
+
+nameSaveBtn.addEventListener('click', saveName);
+nameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); saveName(); }
+});
+hsResetBtn.addEventListener('click', () => {
+  hsResetBtn.blur();
+  if (!window.confirm('Reset all high scores?')) return;
+  hsData = emptyHighScores();
+  pendingIndex = null;
+  highlightIndex = -1;
+  nameEntryEl.hidden = true;
+  saveHighScores();
+  renderHighScores();
+});
+
 // ---- Input and startup ----
 
 document.addEventListener('keydown', e => {
+  // Typing in the name field must not trigger game keys.
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
   if (e.code === 'KeyT') { toggleTheme(); return; }
   if (inMenu) return;
   if (abilityOpen) { handleAbilityKey(e.code); return; }

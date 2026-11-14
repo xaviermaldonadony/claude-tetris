@@ -97,6 +97,19 @@
       <div class="overlay-box">
         <p id="overlay-title"></p>
         <p id="overlay-score"></p>
+        <div id="name-entry" class="name-entry" hidden>
+          <label for="name-input" class="hs-title">NEW HIGH SCORE · ENTER NAME</label>
+          <div class="name-row">
+            <input id="name-input" type="text" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Name" />
+            <button id="name-save-btn" type="button">Save</button>
+          </div>
+        </div>
+        <div id="highscores" class="highscores" hidden>
+          <p class="hs-title">HIGH SCORES</p>
+          <ol id="hs-list" class="hs-list"></ol>
+          <p id="hs-stats" class="hs-stats"></p>
+          <button id="hs-reset-btn" type="button">Reset scores</button>
+        </div>
         <div class="overlay-actions">
           <button id="classic-btn" type="button" hidden>Classic</button>
           <button id="challenge-btn" type="button" hidden>Challenge</button>
