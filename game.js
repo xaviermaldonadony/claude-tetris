@@ -81,6 +81,23 @@ const LINE_SCORES = [0, 100, 300, 500, 800];
 const TSPIN_BONUS = [400, 800, 1200, 1600];
 const PERFECT_BONUS = [0, 800, 1200, 1800, 2000];
 
+// Visual skins. A palette, if set, replaces COLORS per piece type (same indices 1-19).
+// glow = shadowBlur in px (0 = none), radius = corner radius as a fraction of block size (0 = square),
+// pixel = draw a pixel-art texture over each block. Canvas background, grid and highlight
+// come from the [data-skin] rules in style.css.
+const NEON_COLORS = [null,
+  '#00fff0', '#fff700', '#d400ff', '#39ff14', '#ff2040', '#2d6bff', '#ff9100', '#ff00aa', '#a6ff00', '#5a6bff',
+  '#b0c4de', '#c08050', '#ff6a00', '#ffff00', '#00ffa0', '#607d8b', '#8ff7ff', '#ffffff', '#777777'];
+const PASTEL_COLORS = [null,
+  '#a6e8f2', '#fff0a3', '#d9b8e8', '#b9e8c0', '#f5b5b5', '#a8cdf5', '#ffd1a1', '#f7b8cf', '#cdebb0', '#bcc4ee',
+  '#c9d3d9', '#c7aea5', '#ffb89e', '#fff7b0', '#9fe6d6', '#7d8d95', '#d8f3fc', '#fafafa', '#9e9e9e'];
+const SKINS = {
+  retro:  { label: 'Retro',     palette: null,          glow: 0,  radius: 0,   pixel: false },
+  neon:   { label: 'Neon',      palette: NEON_COLORS,   glow: 10, radius: 0,   pixel: false },
+  pastel: { label: 'Pastel',    palette: PASTEL_COLORS, glow: 0,  radius: 0.2, pixel: false },
+  pixel:  { label: 'Pixel art', palette: null,          glow: 0,  radius: 0,   pixel: true },
+};
+
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 const nextCanvas = document.getElementById('next-canvas');
@@ -108,12 +125,15 @@ const classicBtn = document.getElementById('classic-btn');
 const challengeBtn = document.getElementById('challenge-btn');
 const OVERLAY_BUTTONS = [restartBtn, nextBtn, menuBtn, classicBtn, challengeBtn];
 const themeToggle = document.getElementById('theme-toggle');
+const skinSelect = document.getElementById('skin-select');
 
 // Canvas colors that depend on the theme. Read from CSS variables and cached;
 // refreshed by setTheme() so they are not queried every frame.
 const themeColors = { grid: '#22222e', highlight: 'rgba(255,255,255,0.12)', outline: 'transparent', ghostAlpha: 0.2, popup: '#7aa2f7' };
 
 const ABILITY_KEYS = { Digit1: 1, Digit2: 2, Digit3: 3, Digit4: 4 };
+
+let skinName = 'retro'; // key into SKINS
 
 // Game state. Set by init() (a run) or showMenu().
 let board, current, queue, hold, holdUsed;
@@ -796,18 +816,77 @@ function toggleTheme() {
   setTheme(currentTheme() === 'light' ? 'dark' : 'light');
 }
 
+function setSkin(name) {
+  skinName = SKINS[name] ? name : 'retro';
+  document.documentElement.dataset.skin = skinName;
+  try { localStorage.setItem('skin', skinName); } catch (e) { /* storage unavailable */ }
+  skinSelect.value = skinName;
+  readThemeColors();
+  if (board) draw();
+}
+
+// Adds a rounded-rect sub-path (caller starts and fills/strokes it).
+function addRoundRect(context, x, y, w, h, r) {
+  context.moveTo(x + r, y);
+  context.arcTo(x + w, y, x + w, y + h, r);
+  context.arcTo(x + w, y + h, x, y + h, r);
+  context.arcTo(x, y + h, x, y, r);
+  context.arcTo(x, y, x + w, y, r);
+  context.closePath();
+}
+
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
+  const skin = SKINS[skinName];
+  const px = x * size + 1, py = y * size + 1, w = size - 2;
+  const r = skin.radius ? Math.round(size * skin.radius) : 0;
   context.globalAlpha = alpha ?? 1;
-  context.fillStyle = COLORS[colorIndex];
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = themeColors.highlight;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  context.fillStyle = (skin.palette || COLORS)[colorIndex];
+  if (skin.glow) {
+    context.shadowColor = context.fillStyle;
+    context.shadowBlur = skin.glow;
+  }
+  if (r) {
+    context.beginPath();
+    addRoundRect(context, px, py, w, w, r);
+    context.fill();
+  } else {
+    context.fillRect(px, py, w, w);
+  }
+  // glow only applies to the body fill, not the highlight or outline
+  if (skin.glow) context.shadowBlur = 0;
+  // highlight (clipped to the rounded shape when the skin has rounded corners)
+  if (r) {
+    context.save();
+    context.beginPath();
+    addRoundRect(context, px, py, w, w, r);
+    context.clip();
+    context.fillStyle = themeColors.highlight;
+    context.fillRect(px, py, w, 4);
+    context.restore();
+  } else {
+    context.fillStyle = themeColors.highlight;
+    context.fillRect(px, py, w, 4);
+  }
+  if (skin.pixel) {
+    // pixel-art texture: dark bottom/right bevel plus a grid of light dots
+    context.fillStyle = 'rgba(0,0,0,0.22)';
+    context.fillRect(px, py + w - 2, w, 2);
+    context.fillRect(px + w - 2, py, 2, w);
+    context.fillStyle = 'rgba(255,255,255,0.18)';
+    for (let dy = 6; dy < w - 4; dy += 8)
+      for (let dx = 6; dx < w - 4; dx += 8) context.fillRect(px + dx, py + dy, 2, 2);
+  }
   // outline (keeps light pieces readable on the light theme)
   context.strokeStyle = themeColors.outline;
   context.lineWidth = 1;
-  context.strokeRect(x * size + 1.5, y * size + 1.5, size - 3, size - 3);
+  if (r) {
+    context.beginPath();
+    addRoundRect(context, px + 0.5, py + 0.5, w - 1, w - 1, r);
+    context.stroke();
+  } else {
+    context.strokeRect(x * size + 1.5, y * size + 1.5, size - 3, size - 3);
+  }
   // power-up and wild markers
   const label = POWER_LABELS[colorIndex];
   if (label) {
@@ -954,8 +1033,19 @@ themeToggle.addEventListener('click', () => {
   themeToggle.blur();
 });
 
+for (const [key, s] of Object.entries(SKINS)) skinSelect.add(new Option(s.label, key));
+skinSelect.addEventListener('change', () => {
+  setSkin(skinSelect.value);
+  // Same as the theme button: keep Space/arrows controlling the game, not the select.
+  skinSelect.blur();
+});
+
 let savedTheme = null;
 try { savedTheme = localStorage.getItem('theme'); } catch (e) { /* storage unavailable */ }
 setTheme(savedTheme === 'light' ? 'light' : 'dark');
+
+let savedSkin = null;
+try { savedSkin = localStorage.getItem('skin'); } catch (e) { /* storage unavailable */ }
+setSkin(savedSkin);
 
 showMenu();

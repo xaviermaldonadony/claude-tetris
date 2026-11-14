@@ -10,6 +10,11 @@
     try {
       if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light';
     } catch (e) {}
+    // Same for the visual skin. Keys must match SKINS in game.js.
+    try {
+      const skin = localStorage.getItem('skin');
+      document.documentElement.dataset.skin = ['neon', 'pastel', 'pixel'].includes(skin) ? skin : 'retro';
+    } catch (e) {}
   </script>
 </head>
 <body>
@@ -89,6 +94,7 @@
         <div class="panel-section">
           <span class="label">THEME</span>
           <button id="theme-toggle" type="button" aria-label="Switch to light mode">Light mode</button>
+          <select id="skin-select" aria-label="Visual skin"></select>
         </div>
       </aside>
     </div>
