@@ -17,6 +17,34 @@
     <h1 class="game-title">TETRIS</h1>
 
     <div class="game-container">
+      <aside class="panel">
+        <div class="panel-section">
+          <span class="label">HOLD <kbd>C</kbd></span>
+          <canvas id="hold-canvas" width="120" height="120"></canvas>
+        </div>
+
+        <div class="panel-section">
+          <span class="label">ENERGY</span>
+          <div id="energy-track"><div id="energy-bar"></div></div>
+          <span id="energy-hint"></span>
+        </div>
+
+        <div class="panel-section">
+          <span class="label">COMBO</span>
+          <span class="value" id="combo">-</span>
+        </div>
+
+        <div class="panel-section">
+          <span class="label">B2B</span>
+          <span class="value" id="b2b">-</span>
+        </div>
+
+        <div class="panel-section">
+          <span class="label">OBJECTIVE</span>
+          <span id="objective" class="objective">Classic</span>
+        </div>
+      </aside>
+
       <canvas id="board" width="300" height="600"></canvas>
 
       <aside class="panel">
@@ -38,6 +66,11 @@
           <canvas id="next-canvas" width="120" height="120"></canvas>
         </div>
 
+        <div class="panel-section" id="preview-section" hidden>
+          <span class="label">UPCOMING</span>
+          <canvas id="preview-canvas" width="128" height="320"></canvas>
+        </div>
+
         <div class="panel-section controls">
           <span class="label">CONTROLS</span>
           <ul>
@@ -45,6 +78,9 @@
             <li><kbd>↑</kbd> rotate</li>
             <li><kbd>↓</kbd> soft drop</li>
             <li><kbd>Space</kbd> hard drop</li>
+            <li><kbd>C</kbd><kbd>Shift</kbd> hold</li>
+            <li><kbd>E</kbd> ability (full bar)</li>
+            <li><kbd>1</kbd>–<kbd>4</kbd> pick ability</li>
             <li><kbd>P</kbd> pause</li>
             <li><kbd>T</kbd> toggle theme</li>
           </ul>
@@ -59,9 +95,15 @@
 
     <div id="overlay" class="overlay hidden">
       <div class="overlay-box">
-        <p id="overlay-title">GAME OVER</p>
+        <p id="overlay-title"></p>
         <p id="overlay-score"></p>
-        <button id="restart-btn">Restart</button>
+        <div class="overlay-actions">
+          <button id="classic-btn" type="button" hidden>Classic</button>
+          <button id="challenge-btn" type="button" hidden>Challenge</button>
+          <button id="next-btn" type="button" hidden>Next</button>
+          <button id="restart-btn" type="button" hidden>Restart</button>
+          <button id="menu-btn" type="button" hidden>Menu</button>
+        </div>
       </div>
     </div>
   </div>

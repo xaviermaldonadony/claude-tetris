@@ -43,6 +43,12 @@ It is a playable version of classic Tetris with all the mechanics you would expe
 - **Classic Tetris scoring** (100 / 300 / 500 / 800 multiplied by level).
 - **Levels** that increase every 10 lines and speed up the fall.
 - **Pause** and **Game Over** with a restart option.
+- **Combos**: consecutive line-clearing locks multiply the line score (x2, x3, ...).
+- **T-spin**, **back-to-back** (x1.5 for consecutive Tetrises or T-spins), and **perfect clear** bonuses, with on-screen popups.
+- **Power-ups**: every 5 cleared lines, a power piece arrives: **Bomb** (clears 3×3), **Lightning** (clears a row or column), **Dye** (turns one color into wildcards), **Gravity** (removes gaps), **Freeze** (stops falling for 5 s). Power pieces take effect when they lock.
+- **Hold** (`C` or `Shift`): store the current piece and swap it back later. Once per piece.
+- **Abilities**: fill the energy bar by clearing lines, then press `E` and pick: preview 5 pieces (`1`), swap the current piece (`2`), slow time for 10 s (`3`), or undo the last placement (`4`).
+- **Challenge mode**: five objectives in order: Sprint (40 lines in 2:00), Rising Garbage (survive 1:00), Pre-placed blocks (15 lines), Invisible blocks (10 lines), and Reverse Rotation (15 lines).
 
 ---
 
@@ -85,7 +91,11 @@ Then open `http://localhost:8000` in your browser.
 | `↑` or `X` | Rotate the piece clockwise       |
 | `↓`       | Soft drop (fall faster)           |
 | `Space`   | Hard drop (instant drop)          |
+| `C` or `Shift` | Hold the current piece (swap if one is held) |
+| `E`       | Open the ability menu (needs a full energy bar) |
+| `1`–`4`   | Pick an ability (`E` or `Esc` cancels) |
 | `P`       | Pause / resume                    |
+| `T`       | Toggle light / dark theme         |
 
 ---
 
@@ -109,7 +119,7 @@ Provides the visual look: a _dark / retro arcade_ aesthetic with a dark backgrou
 
 Contains all the game logic. In broad strokes:
 
-- **Board model**: a `ROWS × COLS` matrix where each cell stores `0` (empty) or a color index (1–12) that identifies the piece.
+- **Board model**: a `ROWS × COLS` matrix where each cell stores `0` (empty) or a color index (1–19) that identifies the piece.
 - **Pieces**: defined as square matrices. Rotation uses the transpose + row reversal (`rotateCW`).
 - **Collision detection** (`collide`): checks that no cell of the piece leaves the board or overlaps locked blocks.
 - **Wall kicks** (`tryRotate`): if a rotation collides, it tries shifting the piece ±1 and ±2 columns before discarding the rotation.
@@ -122,10 +132,11 @@ Contains all the game logic. In broad strokes:
 ### Game flow
 
 ```
-init()
+showMenu()                          → Classic / Challenge overlay (on load)
+init()                              → starts a run (Classic, or a challenge via startChallengeAt)
   ├─ createBoard()                  → empty matrix
-  ├─ next = randomPiece()
-  ├─ spawn()                        → moves next to current and generates a new next
+  ├─ queue = 6 × randomPiece()
+  ├─ spawn()                        → moves queue[0] to current and adds a piece to the queue
   └─ requestAnimationFrame(loop)
         ↓
    loop(timestamp)
@@ -174,7 +185,7 @@ Some parameters that are easy to tune in `game.js`:
 | `COLS`         | Board columns                            | `10`                  |
 | `ROWS`         | Board rows                               | `20`                  |
 | `BLOCK`        | Pixel size of each cell                  | `30`                  |
-| `COLORS`       | Color palette per piece type             | 12 colors             |
+| `COLORS`       | Color palette per cell type              | 19 colors             |
 | `LINE_SCORES`  | Points for 1, 2, 3, or 4 cleared lines   | `[0,100,300,500,800]` |
 | `dropInterval` | Initial fall speed in ms                 | `1000`                |
 
