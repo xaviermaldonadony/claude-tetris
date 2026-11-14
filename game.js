@@ -39,6 +39,11 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
+const themeToggle = document.getElementById('theme-toggle');
+
+// Canvas colors that depend on the theme. Read from CSS variables and cached;
+// refreshed by setTheme() so they are not queried every frame.
+const themeColors = { grid: '#22222e', highlight: 'rgba(255,255,255,0.12)', outline: 'transparent', ghostAlpha: 0.2 };
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 
@@ -163,13 +168,17 @@ function drawBlock(context, x, y, colorIndex, size, alpha) {
   context.fillStyle = color;
   context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
   // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
+  context.fillStyle = themeColors.highlight;
   context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  // outline (keeps light pieces readable on the light theme)
+  context.strokeStyle = themeColors.outline;
+  context.lineWidth = 1;
+  context.strokeRect(x * size + 1.5, y * size + 1.5, size - 3, size - 3);
   context.globalAlpha = 1;
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#22222e';
+  ctx.strokeStyle = themeColors.grid;
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
@@ -199,7 +208,7 @@ function draw() {
   for (let r = 0; r < current.shape.length; r++)
     for (let c = 0; c < current.shape[r].length; c++)
       if (current.shape[r][c])
-        drawBlock(ctx, current.x + c, gy + r, current.shape[r][c], BLOCK, 0.2);
+        drawBlock(ctx, current.x + c, gy + r, current.shape[r][c], BLOCK, themeColors.ghostAlpha);
 
   // current piece
   for (let r = 0; r < current.shape.length; r++)
@@ -256,6 +265,39 @@ function loop(ts) {
   animId = requestAnimationFrame(loop);
 }
 
+function readThemeColors() {
+  const css = getComputedStyle(document.documentElement);
+  const get = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
+  themeColors.grid = get('--grid', '#22222e');
+  themeColors.highlight = get('--block-highlight', 'rgba(255,255,255,0.12)');
+  themeColors.outline = get('--block-outline', 'transparent');
+  const alpha = parseFloat(get('--ghost-alpha', '0.2'));
+  themeColors.ghostAlpha = Number.isFinite(alpha) ? alpha : 0.2;
+}
+
+function currentTheme() {
+  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+}
+
+function setTheme(theme) {
+  if (theme === 'light') document.documentElement.dataset.theme = 'light';
+  else delete document.documentElement.dataset.theme;
+  try { localStorage.setItem('theme', theme); } catch (e) { /* storage unavailable */ }
+
+  const nextLabel = theme === 'light' ? 'Dark mode' : 'Light mode';
+  themeToggle.textContent = nextLabel;
+  themeToggle.setAttribute('aria-label', `Switch to ${nextLabel.toLowerCase()}`);
+
+  readThemeColors();
+  // The loop is stopped while paused or after game over, so redraw manually.
+  if (current) draw();
+  if (next) drawNext();
+}
+
+function toggleTheme() {
+  setTheme(currentTheme() === 'light' ? 'dark' : 'light');
+}
+
 function init() {
   board = createBoard();
   score = 0;
@@ -276,6 +318,7 @@ function init() {
 
 document.addEventListener('keydown', e => {
   if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'KeyT') { toggleTheme(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
@@ -300,5 +343,14 @@ document.addEventListener('keydown', e => {
 });
 
 restartBtn.addEventListener('click', init);
+themeToggle.addEventListener('click', () => {
+  toggleTheme();
+  // Drop focus so Space/Enter keep controlling the game instead of re-clicking.
+  themeToggle.blur();
+});
+
+let savedTheme = null;
+try { savedTheme = localStorage.getItem('theme'); } catch (e) { /* storage unavailable */ }
+setTheme(savedTheme === 'light' ? 'light' : 'dark');
 
 init();
