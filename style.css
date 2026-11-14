@@ -271,3 +271,31 @@ kbd {
 #theme-toggle:hover {
   border-color: var(--accent);
 }
+
+/* ---- Visual skins ---- */
+/* Retro is the default (no overrides). Block colors, glow, corners and texture live in SKINS in game.js.
+   These rules come after the theme blocks so they win over :root[data-theme="light"]. */
+:root[data-skin="neon"] {
+  --canvas-bg: #000000;
+  --canvas-border: #1f3b4d;
+  --grid: #0d1f2a;
+  --block-highlight: rgba(255, 255, 255, 0.25);
+  --block-outline: transparent;
+  --ghost-alpha: 0.25;
+}
+
+#skin-select {
+  background: var(--kbd-bg);
+  color: var(--text);
+  border: 1px solid var(--kbd-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+#skin-select:hover {
+  border-color: var(--accent);
+}
