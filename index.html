@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tetris</title>
   <link rel="stylesheet" href="style.css" />
+  <script>
+    // Apply the saved theme before first paint to avoid a flash. Dark is the default.
+    try {
+      if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light';
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <div class="wrapper">
@@ -40,7 +46,13 @@
             <li><kbd>↓</kbd> soft drop</li>
             <li><kbd>Space</kbd> hard drop</li>
             <li><kbd>P</kbd> pause</li>
+            <li><kbd>T</kbd> toggle theme</li>
           </ul>
+        </div>
+
+        <div class="panel-section">
+          <span class="label">THEME</span>
+          <button id="theme-toggle" type="button" aria-label="Switch to light mode">Light mode</button>
         </div>
       </aside>
     </div>
