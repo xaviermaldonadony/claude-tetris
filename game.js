@@ -13,6 +13,11 @@ const COLORS = [
   '#e57373', // Z - red
   '#42a5f5', // J - blue
   '#ffb74d', // L - orange
+  '#f06292', // + - pink
+  '#aed581', // U - lime
+  '#7986cb', // Y - indigo
+  '#90a4ae', // 1x1 - blue-grey
+  '#8d6e63', // hollow 3x3 - brown
 ];
 
 const PIECES = [
@@ -24,7 +29,21 @@ const PIECES = [
   [[5,5,0],[0,5,5],[0,0,0]],                  // Z
   [[6,0,0],[6,6,6],[0,0,0]],                  // J
   [[0,0,7],[7,7,7],[0,0,0]],                  // L
+  [[0,8,0],[8,8,8],[0,8,0]],                  // + (pentomino)
+  [[9,0,9],[9,9,9],[0,0,0]],                  // U (pentomino)
+  [[0,10,0,0],[10,10,10,10],[0,0,0,0],[0,0,0,0]], // Y (pentomino)
+  [[11]],                                     // 1x1 (reward after Tetris)
+  [[12,12,12],[12,0,12],[12,12,12]],          // hollow 3x3 (challenge)
 ];
+
+const STANDARD_TYPES = [1, 2, 3, 4, 5, 6, 7];
+const PENTOMINO_TYPES = [8, 9, 10];
+const SINGLE_TYPE = 11;
+const HOLLOW_TYPE = 12;
+const PENTOMINO_CHANCE = 0.10;
+const HOLLOW_CHANCE = 0.03;
+const HOLLOW_MIN_LEVEL = 3;
+const TETRIS_LINES = 4;
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
@@ -51,10 +70,26 @@ function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
 }
 
-function randomPiece() {
-  const type = Math.floor(Math.random() * 7) + 1;
+function pick(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function makePiece(type) {
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
+}
+
+function randomPiece() {
+  const roll = Math.random();
+  let type;
+  if (roll < HOLLOW_CHANCE) {
+    type = level >= HOLLOW_MIN_LEVEL ? HOLLOW_TYPE : pick(STANDARD_TYPES);
+  } else if (roll < HOLLOW_CHANCE + PENTOMINO_CHANCE) {
+    type = pick(PENTOMINO_TYPES);
+  } else {
+    type = pick(STANDARD_TYPES);
+  }
+  return makePiece(type);
 }
 
 function collide(shape, ox, oy) {
@@ -115,6 +150,7 @@ function clearLines() {
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
   }
+  return cleared;
 }
 
 function ghostY() {
@@ -142,7 +178,9 @@ function softDrop() {
 
 function lockPiece() {
   merge();
-  clearLines();
+  const cleared = clearLines();
+  // Tetris reward: the 1x1 piece becomes the next piece to spawn.
+  if (cleared === TETRIS_LINES) next = makePiece(SINGLE_TYPE);
   spawn();
 }
 

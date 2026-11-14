@@ -30,7 +30,7 @@ Vanilla JS, HTML5 Canvas, and CSS. No dependencies, no transpilation. The three 
 
 ### Constants that tie files together
 
-`COLS`, `ROWS`, and `BLOCK` in `game.js` determine the canvas size. `index.html` hardcodes `width="300" height="600"` on `#board`. If you change the grid or block size, update the canvas attributes too. `COLORS` is indexed by piece type (1–7), and `PIECES[type]` uses the same indices, so the two arrays must stay aligned. Board cells store the piece type number, which doubles as the color index.
+`COLS`, `ROWS`, and `BLOCK` in `game.js` determine the canvas size. `index.html` hardcodes `width="300" height="600"` on `#board`. If you change the grid or block size, update the canvas attributes too. `COLORS` is indexed by piece type (1–12), and `PIECES[type]` uses the same indices, so the two arrays must stay aligned. Board cells store the piece type number, which doubles as the color index. Types 1–7 are the standard tetrominoes, 8–10 are pentominoes (+, U, Y), 11 is a 1x1 reward given after a 4-line clear (`lockPiece` sets it as `next`), and 12 is a hollow 3x3 challenge piece (level 3+ only). Spawn odds live in `randomPiece()` and the `*_CHANCE` constants.
 
 ## Language
 

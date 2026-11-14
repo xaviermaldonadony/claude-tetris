@@ -35,6 +35,7 @@ It is a playable version of classic Tetris with all the mechanics you would expe
 
 - A board of **10 × 20** cells.
 - The **7 standard pieces** (I, O, T, S, Z, J, L) with distinct colors.
+- **Special pieces** that appear occasionally: pentominoes **+**, **U**, and **Y** (about 10% of spawns); a **1×1** piece given as the next piece after a Tetris (4-line clear); and a **hollow 3×3** challenge piece (about 3% of spawns, level 3+ only).
 - **Rotation** with basic _wall kicks_ (small offsets so a piece can rotate while touching a wall).
 - **Soft drop** (faster fall) and **hard drop** (instant drop).
 - **Ghost piece**: shows where the current piece will land.
@@ -108,7 +109,7 @@ Provides the visual look: a _dark / retro arcade_ aesthetic with a dark backgrou
 
 Contains all the game logic. In broad strokes:
 
-- **Board model**: a `ROWS × COLS` matrix where each cell stores `0` (empty) or a color index (1–7) that identifies the piece.
+- **Board model**: a `ROWS × COLS` matrix where each cell stores `0` (empty) or a color index (1–12) that identifies the piece.
 - **Pieces**: defined as square matrices. Rotation uses the transpose + row reversal (`rotateCW`).
 - **Collision detection** (`collide`): checks that no cell of the piece leaves the board or overlaps locked blocks.
 - **Wall kicks** (`tryRotate`): if a rotation collides, it tries shifting the piece ±1 and ±2 columns before discarding the rotation.
@@ -173,7 +174,7 @@ Some parameters that are easy to tune in `game.js`:
 | `COLS`         | Board columns                            | `10`                  |
 | `ROWS`         | Board rows                               | `20`                  |
 | `BLOCK`        | Pixel size of each cell                  | `30`                  |
-| `COLORS`       | Color palette per piece type             | 7 colors              |
+| `COLORS`       | Color palette per piece type             | 12 colors             |
 | `LINE_SCORES`  | Points for 1, 2, 3, or 4 cleared lines   | `[0,100,300,500,800]` |
 | `dropInterval` | Initial fall speed in ms                 | `1000`                |
 
