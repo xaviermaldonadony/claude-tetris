@@ -10,6 +10,11 @@
     try {
       if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light';
     } catch (e) {}
+    // Same for the visual skin. Keys must match SKINS in game.js.
+    try {
+      const skin = localStorage.getItem('skin');
+      document.documentElement.dataset.skin = ['neon', 'pastel', 'pixel'].includes(skin) ? skin : 'retro';
+    } catch (e) {}
   </script>
 </head>
 <body>
@@ -60,6 +65,10 @@
           <span class="label">LEVEL</span>
           <span class="value" id="level">1</span>
         </div>
+        <div class="panel-section">
+          <span class="label">TOP</span>
+          <span class="value" id="top-player">-</span>
+        </div>
 
         <div class="panel-section">
           <span class="label">NEXT</span>
@@ -81,7 +90,7 @@
             <li><kbd>C</kbd><kbd>Shift</kbd> hold</li>
             <li><kbd>E</kbd> ability (full bar)</li>
             <li><kbd>1</kbd>–<kbd>4</kbd> pick ability</li>
-            <li><kbd>P</kbd> pause</li>
+            <li><kbd>P</kbd><kbd>Esc</kbd> pause</li>
             <li><kbd>T</kbd> toggle theme</li>
           </ul>
         </div>
@@ -89,6 +98,7 @@
         <div class="panel-section">
           <span class="label">THEME</span>
           <button id="theme-toggle" type="button" aria-label="Switch to light mode">Light mode</button>
+          <select id="skin-select" aria-label="Visual skin"></select>
         </div>
       </aside>
     </div>
@@ -97,12 +107,65 @@
       <div class="overlay-box">
         <p id="overlay-title"></p>
         <p id="overlay-score"></p>
+        <div id="name-entry" class="name-entry" hidden>
+          <label for="name-input" class="hs-title">NEW HIGH SCORE · ENTER NAME</label>
+          <div class="name-row">
+            <input id="name-input" type="text" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Name" />
+            <button id="name-save-btn" type="button">Save</button>
+          </div>
+        </div>
+        <div id="highscores" class="highscores" hidden>
+          <p class="hs-title">HIGH SCORES</p>
+          <ol id="hs-list" class="hs-list"></ol>
+          <p id="hs-stats" class="hs-stats"></p>
+          <button id="hs-reset-btn" type="button">Reset scores</button>
+        </div>
         <div class="overlay-actions">
           <button id="classic-btn" type="button" hidden>Classic</button>
           <button id="challenge-btn" type="button" hidden>Challenge</button>
           <button id="next-btn" type="button" hidden>Next</button>
           <button id="restart-btn" type="button" hidden>Restart</button>
           <button id="menu-btn" type="button" hidden>Menu</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="pause-menu" class="pause-menu" hidden>
+      <div class="pause-box">
+        <p class="pause-title">PAUSED</p>
+        <div id="pause-main" class="pause-actions">
+          <button id="pause-resume-btn" type="button">Resume</button>
+          <button id="pause-restart-btn" type="button">Restart</button>
+          <button id="pause-controls-btn" type="button">View controls</button>
+          <label class="pause-level">
+            <span>Starting level</span>
+            <select id="start-level">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+            </select>
+          </label>
+        </div>
+        <div id="pause-controls" class="pause-actions" hidden>
+          <ul class="pause-keys">
+            <li><kbd>←</kbd><kbd>→</kbd> move</li>
+            <li><kbd>↑</kbd><kbd>X</kbd> rotate</li>
+            <li><kbd>↓</kbd> soft drop</li>
+            <li><kbd>Space</kbd> hard drop</li>
+            <li><kbd>C</kbd><kbd>Shift</kbd> hold</li>
+            <li><kbd>E</kbd> ability (full bar)</li>
+            <li><kbd>1</kbd>–<kbd>4</kbd> pick ability</li>
+            <li><kbd>P</kbd><kbd>Esc</kbd> pause / resume</li>
+            <li><kbd>T</kbd> toggle theme</li>
+          </ul>
+          <button id="pause-back-btn" type="button">Back</button>
         </div>
       </div>
     </div>
